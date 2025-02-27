@@ -1,23 +1,19 @@
-import { ContactItem } from '../ContactItem/ContactItem';
-import {
-  ContactListContainer,
-  ContactListHeading,
-  ContactList,
-} from './ContactListStyled.jsx';
+import React from 'react';
+import styles from './ContactList.module.css';
 
-export const ContactListComponent = ({ contacts, onDelete }) => (
-  <ContactListContainer>
-    <ContactListHeading>Contacts:</ContactListHeading>
-    <ContactList>
-      {contacts.map(contact => (
-        <ContactItem
-          key={contact.id}
-          id={contact.id}
-          name={contact.name}
-          number={contact.number}
-          onDelete={onDelete}
-        />
+function ContactList({ contacts, deleteContact }) {
+  return (
+    <ul className={styles.list}>
+      {contacts.map((contact) => (
+        <li key={contact.id} className={styles.item}>
+          {contact.name}: {contact.phone}
+          <button onClick={() => deleteContact(contact.id)} className={styles.button}>Delete</button>
+        </li>
       ))}
-    </ContactList>
-  </ContactListContainer>
-);
+    </ul>
+  );
+}
+
+export default ContactList;
+
+

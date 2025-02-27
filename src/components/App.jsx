@@ -1,71 +1,52 @@
-import Notiflix from 'notiflix';
-import { nanoid } from 'nanoid';
-import { ContactForm } from './ContactForm/ContactForm';
-import { Filter } from './Filter/Filter';
-import { ContactListComponent } from './ContactList/ContactList';
-import { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import ContactForm from '../components/ContactForm/ContactForm.jsx';
+import ContactList from '../components/ContactList/ContactList.jsx';
+import Filter from '../components/Filter/Filter.jsx';
+import { fetchContacts, addContact, deleteContact } from '../features/contacts/contactsSlice.jsx';
+import { setFilter } from '../features/filter/filterSlice.jsx';
+import styles from '../components/ContactForm/ContactForm.module.css';
 
-export const App = () => {
-  const [contacts, setContacts] = useState(() => {
-    const savedContacts = localStorage.getItem('contact');
-    if (savedContacts !== null) {
-      return JSON.parse(savedContacts);
-    } else {
-      return [];
-    }
-  });
-  const [filter, setFilter] = useState('');
+const App = () => {
+  const contacts = useSelector(state => state.contacts.items);
+  const filter = useSelector(state => state.filter);
+  const isLoading = useSelector(state => state.contacts.isLoading);
+  const error = useSelector(state => state.contacts.error);
+  const dispatch = useDispatch();
 
   useEffect(() => {
-    localStorage.setItem('contact', JSON.stringify(contacts));
-  }, [contacts]);
+    dispatch(fetchContacts());
+  }, [dispatch]);
 
-  const addNumber = ({ name, number }) => {
-    const contactWithSameName = contacts.find(
-      contact => contact.name.toLowerCase() === name.toLowerCase()
-    );
-
-    const contactWithSameNumber = contacts.find(
-      contact => contact.number === number
-    );
-
-    if (contactWithSameName && contactWithSameNumber) {
-      Notiflix.Notify.failure(
-        `Контакт з ім'ям ${name} та з номером ${number} вже існує!`
-      );
-    } else if (contactWithSameName) {
-      Notiflix.Notify.failure(`Контакт з ім'ям ${name} вже існує!`);
-    } else if (contactWithSameNumber) {
-      Notiflix.Notify.failure(`Контакт з номером ${number} вже існує!`);
-    } else {
-      const newContact = { id: nanoid(), name, number };
-      setContacts(prevState => [...prevState, newContact]);
-      Notiflix.Notify.success(`Контакт ${name} успішно додано!`);
+  const handleAddContact = (newContact) => {
+    const duplicate = contacts.find(contact => contact.name === newContact.name);
+    if (duplicate) {
+      alert(`${newContact.name} is already in contacts.`);
+      return;
     }
+    dispatch(addContact(newContact));
   };
 
-  const filterContacts = event => {
-    setFilter(event.target.value);
+  const handleDeleteContact = (id) => {
+    dispatch(deleteContact(id));
   };
 
-  const handleDelete = id => {
-    setContacts(prevState => prevState.filter(contact => contact.id !== id));
-  };
-
-  const filteredContacts = contacts.filter(
-    contact =>
-      contact.name.toLowerCase().includes(filter.toLowerCase()) ||
-      contact.number.includes(filter)
+  const filteredContacts = contacts.filter(contact =>
+    contact.name && contact.name.toLowerCase().includes(filter.toLowerCase())
   );
 
   return (
-    <div style={{ marginBottom: '50px' }}>
-      <ContactForm onSubmit={addNumber} />
-      <Filter value={filter} onChange={filterContacts} />
-      <ContactListComponent
-        contacts={filteredContacts}
-        onDelete={handleDelete}
-      />
+    <div className={styles.mainDiv}>
+      <h1 className={styles.title}>Phonebook</h1>
+      <ContactForm addContact={handleAddContact} />
+      <h2 className={styles.title}>Contacts</h2>
+      <Filter filter={filter} setFilter={(value) => dispatch(setFilter(value))} />
+      {isLoading && <p>Loading...</p>}
+      {error && <p>Error: {error}</p>}
+      <ContactList contacts={filteredContacts} deleteContact={handleDeleteContact} />
     </div>
   );
 };
+
+export default App;
+
